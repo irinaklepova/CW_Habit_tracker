@@ -13,6 +13,7 @@ class Habit(models.Model):
     )
     place = models.CharField(max_length=100, **NULLABLE, verbose_name="Место")
     time = models.TimeField(verbose_name="Время привычки")
+    date = models.DateField(default="2024-01-01", verbose_name="дата привычки")
     action = models.CharField(max_length=200, verbose_name="Действие")
     is_pleasant = models.BooleanField(
         default=False, verbose_name="Признак приятной привычки"
@@ -21,10 +22,10 @@ class Habit(models.Model):
         "self", on_delete=models.SET_NULL, **NULLABLE, verbose_name="Связанная привычка"
     )
     periodicity = models.PositiveSmallIntegerField(
-        default=1, **NULLABLE, verbose_name="Периодичность привычки в днях"
+        default=1, verbose_name="Периодичность привычки в днях"
     )
     award = models.CharField(max_length=255, **NULLABLE, verbose_name="Вознаграждение")
-    complete_time = models.DurationField(**NULLABLE, verbose_name="Время на выполнение")
+    complete_time = models.TimeField(**NULLABLE, verbose_name="Время на выполнение")
     is_published = models.BooleanField(
         default=False, verbose_name="Признак публичности"
     )
