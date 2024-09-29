@@ -9,7 +9,7 @@ app_name = UsersConfig.name
 
 urlpatterns = [
     path(
-        "login/",
+        "token/",
         TokenObtainPairView.as_view(permission_classes=(AllowAny,)),
         name="login",
     ),
