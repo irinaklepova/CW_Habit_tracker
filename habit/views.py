@@ -3,10 +3,11 @@ from rest_framework.generics import (
     CreateAPIView,
     UpdateAPIView,
     DestroyAPIView,
+    RetrieveAPIView,
 )
 from habit.models import Habit
 from habit.paginators import HabitPagination
-from habit.permissions import IsOwner
+from users.permissions import IsOwner
 from habit.serializers import HabitSerializer
 
 
@@ -18,6 +19,14 @@ class HabitListAPIView(ListAPIView):
     pagination_class = HabitPagination
 
 
+class HabitRetrieveAPIView(RetrieveAPIView):
+    """Generic-класс для просмотра привычки"""
+
+    serializer_class = HabitSerializer
+    queryset = Habit.objects.all()
+    permission_classes = (IsOwner,)
+
+
 class HabitPersonAPIView(ListAPIView):
     """Generic-класс для вывода списка привычек, принадлежащих пользователю"""
 
@@ -26,7 +35,7 @@ class HabitPersonAPIView(ListAPIView):
     permission_classes = (IsOwner,)
 
     def get_queryset(self):
-        queryset = Habit.objects.filter(user=self.request.user)
+        queryset = Habit.objects.filter(owner=self.request.user)
         return queryset
 
 
