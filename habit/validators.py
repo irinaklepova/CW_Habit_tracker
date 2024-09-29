@@ -2,42 +2,53 @@ from datetime import time
 from rest_framework.serializers import ValidationError
 
 
-class RelatedHabitOrAwardValidator:
-    """Валидатор проверяет одновременный выбор связанной привычки и указания вознаграждения"""
+class HabitAwardValidator:
+    """
+    Валидатор проверяет условия:
+    - В модели не должно быть заполнено одновременно и поле вознаграждения, и поле связанной привычки.
+    Можно заполнить только одно из двух полей.
+    - У приятной привычки не может быть вознаграждения.
+    """
 
-    def __init__(self, related_habit, award):
-        self.related_habit = related_habit
-        self.award = award
+    def __init__(self, field):
+        self.field = field
 
     def __call__(self, value):
-        tmp_related_habit = dict(value).get(self.related_habit)
-        tmp_award = dict(value).get(self.award)
-        if tmp_related_habit is not None and tmp_award is not None:
+        award = value.get(self.field)
+        related_habit = value.get("related_habit")
+        is_pleasant = value.get("is_pleasant")
+        if award and is_pleasant:
+            raise ValidationError("У приятной привычки не может быть вознаграждения")
+        elif award and related_habit:
             raise ValidationError(
-                "Не должно быть заполнено одновременно и поле вознаграждения, и поле связанной привычки."
+                "У привычки может быть либо вознаграждение, либо приятная привычка"
             )
 
 
-class PleasantHabitValidator:
-    """Валидатор проверяет отсутствие У приятной привычки вознаграждения или связанной привычки"""
+class RelatedHabitValidator:
+    """
+    Валидатор проверяет условия:
+    - У приятной привычки не может быть связанной привычки.
+    - В связанные привычки могут попадать только привычки с признаком приятной привычки.
+    """
 
-    def __init__(self, related_habit, is_pleasant, award):
-        self.related_habit = related_habit
-        self.is_pleasant = is_pleasant
-        self.award = award
+    def __init__(self, field):
+        self.field = field
 
     def __call__(self, value):
-        tmp_related_habit = value.get(self.related_habit)
-        tmp_is_pleasant = value.get(self.is_pleasant)
-        tmp_award = value.get(self.award)
-        if tmp_is_pleasant and (tmp_related_habit or tmp_award):
+        related_habit = value.get(self.field)
+        is_pleasant = value.get("is_pleasant")
+        if related_habit and is_pleasant:
             raise ValidationError(
-                "У приятной привычки не может быть вознаграждения или связанной привычки."
+                "У приятной привычки не может быть связанной привычки."
             )
+
+        if related_habit and not related_habit.is_pleasant:
+            raise ValidationError("Связанная привычка должна быть приятной")
 
 
 class TimeValidator:
-    """Волидатор проверяет время выполнения (не более 120 секунд)"""
+    """Валидатор проверяет время выполнения (не более 120 секунд)"""
 
     def __init__(self, complete_time):
         self.complete_time = complete_time
@@ -50,22 +61,6 @@ class TimeValidator:
                 raise ValidationError("Время выполнения не может быть более 2 минут")
 
 
-class RelatedHabitIsPleasantValidator:
-    """Валидатор проверяет у связанной привычки признак приятной привычки"""
-
-    def __init__(self, related_habit):
-        self.related_habit = related_habit
-
-    def __call__(self, value):
-        tmp_related_habit = value.get(self.related_habit)
-
-        if tmp_related_habit:
-            if not tmp_related_habit.is_pleasant:
-                raise ValidationError(
-                    "В связанные привычки могут попадать только привычки с признаком приятной привычки."
-                )
-
-
 class PeriodicityValidator:
     """Валидатор проверяет, что привычку нельзя выполнять реже, чем 1 раз в 7 дней"""
 
@@ -74,7 +69,7 @@ class PeriodicityValidator:
 
     def __call__(self, value):
         tmp_periodicity = value.get(self.periodicity)
-        if tmp_periodicity is None or tmp_periodicity > 7:
+        if not (0 < tmp_periodicity <= 7):
             raise ValidationError(
                 "Поле не может быть пустым. Нельзя выполнять привычку реже, чем 1 раз в 7 дней."
             )
